@@ -82,6 +82,10 @@ for(i in 2:length(d[[1]])){
 }
 
 # Show graph again
+rmatrix  <-  matrix(rep(0, length(digestList)*length(digestList)), 
+	ncol=length(digestList))
+colnames(rmatrix) <- digestList
+rownames(rmatrix) <- digestList
 for(i in 1:length(d[[1]])){
 	rmatrix[d$A_ID[i],d$B_ID[i]]=1
 }
@@ -115,7 +119,9 @@ t <- cbind(t[,1:11],t[,23,drop=F],t[,12:22],t[,24,drop=F])
 
 # instead of 0 and 1's, when opinions differ, we could set values in between
 
+
 # instead of using the regular cols, use ratios between same cols of A and B
+
 
 # Create AB's and BA's
 mirrorData = d
