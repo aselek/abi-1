@@ -73,6 +73,14 @@ joinAandBcols <- function(d){
 	d$network_feature_3[is.na(d$network_feature_3)] <- 0
 	d$A_network_feature_3=NULL
 	d$B_network_feature_3=NULL
+
+	if(!is.null(d$A_FollowersFollowing)){
+		d$FollowersFollowing = d$A_FollowersFollowing /d$B_FollowersFollowing 
+		d$FollowersFollowing [is.infinite(d$FollowersFollowing)] <- d$A_FollowersFollowing[is.infinite(d$FollowersFollowing )]
+		d$A_FollowersFollowing=NULL
+		d$B_FollowersFollowing=NULL
+	}
+
 	return(d)
 }
 
@@ -216,11 +224,11 @@ t=read.csv('test.csv', TRUE, ',')
 
 # Create IDs and associate A>B>C as A>C on the dataset. Then remove the IDs
 # This takes hours to run; consider loading "newData.csv"
-d=addID(d)
+#d=addID(d)
 #showGraph(digestList)
-result=associateABCasAC(d)
-digestList=result[1]
-d=result[2]
+#result=associateABCasAC(d)
+#digestList=result[1]
+#d=result[2]
 #showGraph(digestList)
 d=remID(d)
 
@@ -260,16 +268,9 @@ regressionAll(predictorsRegr, d, t)
 classifyAll(predictorsBoth, dC, tC)
 classifyAll(predictorsClass, dC, tC)
 
-# Random Forest 	76%
-#d$Choice <- as.factor(d$Choice)
-#RF=fit(Choice~.,d,model="randomforest") 
-#PRFu=predict(RF,t)
-
 # Boosting		78%
-#d$Choice <- as.factor(d$Choice)
-#t$Choice <- as.factor(c(rep(1, length(t[[1]])/2),rep(0,length(t[[1]])/2)))
-#RF=fit(Choice~.,d,model="boosting") 
-#PRFu=predict(RF,t)
+RF=fit(Choice~.,dC,model="boosting") 
+PRFu=predict(RF,tC)
 
 # Convert RF probabilities to 0s and 1s
 #PRF=c(1:length(t[[1]]))
