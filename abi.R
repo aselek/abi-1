@@ -84,6 +84,124 @@ joinAandBcols <- function(d){
 	return(d)
 }
 
+joinAandBcolsD <- function(d){
+	d$follower_count = d$A_follower_count-d$B_follower_count
+	d$follower_count[is.infinite(d$follower_count)] <- d$A_follower_count[is.infinite(d$follower_count)]
+	d$A_follower_count=NULL
+	d$B_follower_count=NULL
+	d$following_count = d$A_following_count-d$B_following_count
+	d$following_count[is.infinite(d$following_count)] <- d$A_following_count[is.infinite(d$following_count)]
+	d$A_following_count=NULL
+	d$B_following_count=NULL
+	d$listed_count = d$A_listed_count-d$B_listed_count
+	d$listed_count[is.infinite(d$listed_count)] <- d$A_listed_count[is.infinite(d$listed_count)]
+	d$A_listed_count=NULL
+	d$B_listed_count=NULL
+	d$mentions_received = d$A_mentions_received-d$B_mentions_received
+	d$mentions_received[is.infinite(d$mentions_received)] <- d$A_mentions_received[is.infinite(d$mentions_received)]
+	d$A_mentions_received=NULL
+	d$B_mentions_received=NULL
+	d$retweets_received = d$A_retweets_received-d$B_retweets_received
+	d$retweets_received[is.infinite(d$retweets_received)] <- d$A_retweets_received[is.infinite(d$retweets_received)]
+	d$A_retweets_received=NULL
+	d$B_retweets_received=NULL
+	d$mentions_sent = d$A_mentions_sent-d$B_mentions_sent
+	d$mentions_sent[is.infinite(d$mentions_sent)] <- d$A_mentions_sent[is.infinite(d$mentions_sent)]
+	d$A_mentions_sent=NULL
+	d$B_mentions_sent=NULL
+	d$retweets_sent  = d$A_retweets_sent-d$B_retweets_sent
+	d$retweets_sent[is.infinite(d$retweets_sent)] <- d$A_retweets_sent[is.infinite(d$retweets_sent)]
+	d$A_retweets_sent =NULL
+	d$B_retweets_sent =NULL
+	d$posts = d$A_posts-d$B_posts
+	d$posts[is.infinite(d$posts)] <- d$A_posts[is.infinite(d$posts)]
+	d$A_posts=NULL
+	d$B_posts=NULL
+	d$network_feature_1 = d$A_network_feature_1-d$B_network_feature_1
+	d$network_feature_1[is.infinite(d$network_feature_1)] <- d$A_network_feature_1[is.infinite(d$network_feature_1)]
+	d$network_feature_1[is.na(d$network_feature_1)] <- 0
+	d$A_network_feature_1=NULL
+	d$B_network_feature_1=NULL
+	d$network_feature_2 = d$A_network_feature_2-d$B_network_feature_2
+	d$network_feature_2[is.infinite(d$network_feature_2)] <- d$A_network_feature_2[is.infinite(d$network_feature_2)]
+	d$network_feature_2[is.na(d$network_feature_2)] <- 0
+	d$A_network_feature_2=NULL
+	d$B_network_feature_2=NULL
+	d$network_feature_3 = d$A_network_feature_3-d$B_network_feature_3
+	d$network_feature_3[is.infinite(d$network_feature_3)] <- d$A_network_feature_3[is.infinite(d$network_feature_3)]
+	d$network_feature_3[is.na(d$network_feature_3)] <- 0
+	d$A_network_feature_3=NULL
+	d$B_network_feature_3=NULL
+
+	if(!is.null(d$A_FollowersFollowing)){
+		d$FollowersFollowing = d$A_FollowersFollowing-d$B_FollowersFollowing 
+		d$FollowersFollowing [is.infinite(d$FollowersFollowing)] <- d$A_FollowersFollowing[is.infinite(d$FollowersFollowing )]
+		d$A_FollowersFollowing=NULL
+		d$B_FollowersFollowing=NULL
+	}
+
+	return(d)
+}
+
+# Create ratios between all A and B columns
+joinAandBcolsWithDeltas <- function(d){
+	d$follower_count = d$A_follower_count/d$B_follower_count
+	d$follower_countD = d$A_follower_count-d$B_follower_count
+	d$follower_count[is.infinite(d$follower_count)] <- d$A_follower_count[is.infinite(d$follower_count)]
+	
+	d$following_count = d$A_following_count/d$B_following_count
+	d$following_countD= d$A_following_count-d$B_following_count
+	d$following_count[is.infinite(d$following_count)] <- d$A_following_count[is.infinite(d$following_count)]
+	
+	d$listed_count = d$A_listed_count/d$B_listed_count
+	d$listed_countD= d$A_listed_count-d$B_listed_count
+	d$listed_count[is.infinite(d$listed_count)] <- d$A_listed_count[is.infinite(d$listed_count)]
+
+	d$mentions_received = d$A_mentions_received/d$B_mentions_received
+	d$mentions_receivedD= d$A_mentions_received-d$B_mentions_received
+	d$mentions_received[is.infinite(d$mentions_received)] <- d$A_mentions_received[is.infinite(d$mentions_received)]
+
+	d$retweets_received = d$A_retweets_received/d$B_retweets_received
+	d$retweets_receivedD= d$A_retweets_received-d$B_retweets_received
+	d$retweets_received[is.infinite(d$retweets_received)] <- d$A_retweets_received[is.infinite(d$retweets_received)]
+
+	d$mentions_sent = d$A_mentions_sent/d$B_mentions_sent
+	d$mentions_sentD= d$A_mentions_sent-d$B_mentions_sent
+	d$mentions_sent[is.infinite(d$mentions_sent)] <- d$A_mentions_sent[is.infinite(d$mentions_sent)]
+
+	d$retweets_sent  = d$A_retweets_sent/d$B_retweets_sent
+	d$retweets_sentD = d$A_retweets_sent-d$B_retweets_sent
+	d$retweets_sent[is.infinite(d$retweets_sent)] <- d$A_retweets_sent[is.infinite(d$retweets_sent)]
+
+	d$posts = d$A_posts/d$B_posts
+	d$postsD = d$A_posts-d$B_posts
+	d$posts[is.infinite(d$posts)] <- d$A_posts[is.infinite(d$posts)]
+
+	d$network_feature_1 = d$A_network_feature_1/d$B_network_feature_1
+	d$network_feature_1D = d$A_network_feature_1-d$B_network_feature_1
+	d$network_feature_1[is.infinite(d$network_feature_1)] <- d$A_network_feature_1[is.infinite(d$network_feature_1)]
+	d$network_feature_1[is.na(d$network_feature_1)] <- 0
+
+	d$network_feature_2 = d$A_network_feature_2/d$B_network_feature_2
+	d$network_feature_2D = d$A_network_feature_2-d$B_network_feature_2
+	d$network_feature_2[is.infinite(d$network_feature_2)] <- d$A_network_feature_2[is.infinite(d$network_feature_2)]
+	d$network_feature_2[is.na(d$network_feature_2)] <- 0
+
+	d$network_feature_3 = d$A_network_feature_3/d$B_network_feature_3
+	d$network_feature_3D = d$A_network_feature_3-d$B_network_feature_3
+	d$network_feature_3[is.infinite(d$network_feature_3)] <- d$A_network_feature_3[is.infinite(d$network_feature_3)]
+	d$network_feature_3[is.na(d$network_feature_3)] <- 0
+
+	if(!is.null(d$A_FollowersFollowing)){
+		d$FollowersFollowing = d$A_FollowersFollowing /d$B_FollowersFollowing 
+		d$FollowersFollowingD = d$A_FollowersFollowing-d$B_FollowersFollowing 
+		d$FollowersFollowing [is.infinite(d$FollowersFollowing)] <- d$A_FollowersFollowing[is.infinite(d$FollowersFollowing )]
+	}
+
+	return(d)
+}
+
+
 # Create ratios or differences between followers/following
 createFollowersFollowingRatios <- function(d){
 	d$A_FollowersFollowing <- 0
@@ -125,7 +243,60 @@ classifyAll <- function(predictorsClass, dC, tC){
 		# Save to a CSV
 		P=data.frame(ID=c(1:length(t[[1]])),Choice=PRF)
 		write.csv(P,paste(predictorsClass[j], "C", sep=""), row.names=FALSE)
+
+		# Save probabilites of prediction to CSV
+		P=data.frame(ID=c(1:length(t[[1]])),Choice0=PRFu[,1], Choice1=PRFu[,2])
+		write.csv(P,paste(predictorsClass[j], "Cprobs", sep=""), row.names=FALSE)
 	}
+}
+
+# Use RMiner to do classification on an algorithm
+classify <- function(predictorsClass, dC, tC){
+	RF=fit(Choice~.,dC,model=predictorsClass) 
+	PRFu=predict(RF,tC) #change this back to tC
+
+	j=0
+	xVals=c(0)
+	yVals=c(0)
+	while(j<=1){
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(tC[[1]]))
+			for(i in 1:length(PRFu[,1])) {
+   				PRF[i] <- ifelse((PRFu[i,1] - PRFu[i,2] + 1) / 2 < j,1,0)
+		}
+
+		pred = prediction(PRF, d$Choice)
+		perf=performance(pred,"tpr","fpr")
+		if(length(perf@x.values[[1]])==3){
+			xVals=c(xVals,perf@x.values[[1]][2])
+			yVals=c(yVals,perf@y.values[[1]][2])
+		}
+
+		j=j+0.1
+	}
+	xVals=c(xVals,1)
+	yVals=c(yVals,1)
+	perf@x.values[[1]]=xVals
+	perf@y.values[[1]]=yVals
+	plot(perf, lwd=3, col="red",spread.estimate="stderror",plotCI.lwd=2)
+	print(xVals)
+	print(yVals)
+
+	# Convert RF probabilities to 0s and 1s
+	PRF=c(1:length(t[[1]]))
+		for(i in 1:length(PRFu[,1])) {
+   			PRF[i] <- ifelse((PRFu[i,1] - PRFu[i,2] + 1) / 2 < 0.5,1,0)
+	}
+
+	# Save to a CSV
+	P=data.frame(ID=c(1:length(t[[1]])),Choice=PRF)
+	write.csv(P,paste(predictorsClass, "C", sep=""), row.names=FALSE)
+	
+	# Save probabilites of prediction to CSV
+	P=data.frame(ID=c(1:length(tC[[1]])),Choice0=PRFu[,1], Choice1=PRFu[,2])
+	write.csv(P,paste(predictorsClass, "Cprobs", sep=""), row.names=FALSE)
+
+	return(perf)
 }
 
 # Use RMiner to do regression on a list of algorithms
@@ -208,6 +379,25 @@ addID <- function(d){
 	return(c(digestList,d))
 }
 
+# Identify users by characteristics, add an ID
+turnFactorIntoRegression <- function(d, idA, idB){
+	#if(length(idA)*2==length(d[[1]])){
+	#	mirrorIdA=c(idA,idB)
+	#	mirrorIdB=c(idB,idA)
+	#	idA3=mirrorIdA
+	#	idB3=mirrorIdB
+	#}
+	d$A_ID <- idA
+	d$B_ID <- idB
+
+	# now compare all IDs and get average
+	# for example, if we had A>B, A<B, A>B, B<A, 
+	# then we have 3 A>B and 1 B>A
+	# which equates to A<>B with 0.75 and B<>A with 0.25
+	
+	return(d)
+}
+
 # Remove IDs
 remID <- function(d){
 	d$A_ID <- NULL
@@ -219,12 +409,14 @@ remID <- function(d){
 
 # Read values
 setwd('C:\\Users\\BlueMoon\\Documents\\GitHub\\abi')
-d=read.csv('newData.csv', TRUE, ',')
+d=read.csv('train.csv', TRUE, ',')
 t=read.csv('test.csv', TRUE, ',')
 
 # Create IDs and associate A>B>C as A>C on the dataset. Then remove the IDs
 # This takes hours to run; consider loading "newData.csv"
 #d=addID(d)
+idA=d$A_ID
+idB=d$B_ID
 #showGraph(digestList)
 #result=associateABCasAC(d)
 #digestList=result[1]
@@ -235,10 +427,6 @@ d=remID(d)
 d = createFollowersFollowingRatios(d)
 t = createFollowersFollowingRatios(t)
 
-# Maybe normalize, discretize, divide my median/std, scale between 0 and 1
-
-# instead of 0 and 1's, when opinions differ, we could set values in between
-
 # mirror the data
 d = mirrorTheData(d)
 
@@ -246,14 +434,25 @@ d = mirrorTheData(d)
 d = joinAandBcols(d)
 t = joinAandBcols(t)
 
-# Try GBM (GBDT), Elo System, etc
+# Normalize with X-min/(max-min), to scale between 0 and 1
+for(i in 2:length(d)){
+	max=max(d[[i]])
+	min=min(d[[i]])
+	d[[i]]=(d[[i]]-min)/(max-min)
+}
+for(i in 1:length(t)){
+	max=max(t[[i]])
+	min=min(t[[i]])
+	t[[i]]=(t[[i]]-min)/(max-min)
+}
 
+# Try GBM (GBDT), Elo System, etc
 # Ignore sent retweets (feature selection)
 
 # List of RMiner's algorithms
 predictorsBoth = c("naive", "ctree", "dt", "kknn", "mlp", "mlpe", "ksvm", "randomforest")
 predictorsClass = c("bagging", "boosting", "lda", "lr", "naivebayes", "qda")
-predictorsRegr = c("mr", "mars", "cubist", "pcr", "plsr", "cppls", "rvm")
+#predictorsRegr = c("mr", "mars", "cubist", "pcr", "plsr", "cppls", "rvm")
 
 # Prepare the data to be learned and fitted
 tC = t
@@ -261,12 +460,27 @@ dC = d
 dC$Choice <- as.factor(dC$Choice)
 tC$Choice <- as.factor(c(rep(1, length(t[[1]])/2),rep(0,length(t[[1]])/2)))
 t$Choice <- c(rep(1, length(t[[1]])/2),rep(0,length(t[[1]])/2))
+perf=classify("boosting", dC, dC)
+
+# instead of 0 and 1's, when opinions differ, we could set values in between
+# but since regressions isnt used, no need to do it
 
 # Try all algorithms
-regressionAll(predictorsBoth, d, t)
-regressionAll(predictorsRegr, d, t)
-classifyAll(predictorsBoth, dC, tC)
-classifyAll(predictorsClass, dC, tC)
+#regressionAll(predictorsBoth, d, t)
+#regressionAll(predictorsRegr, d, t)
+#classifyAll(predictorsBoth, dC, tC)
+#classifyAll(predictorsClass, dC, tC)
+
+for(j in 1:length(predictorsBoth)) {
+	print(predictorsBoth[j])
+	classify(predictorsBoth[j], dC, tC)
+}
+for(j in 1:length(predictorsClass)) {
+	print(predictorsClass[j])
+	classify(predictorsClass[j], dC, tC)
+}
+
+
 
 # Boosting		78%
 RF=fit(Choice~.,dC,model="boosting") 
@@ -283,6 +497,9 @@ PRFu=predict(RF,tC)
 #write.csv(P,"results.csv", row.names=FALSE)
 
 # ROC curve
-#pred = prediction(predictions, true_labels);
-#auc.tmp = performance(pred,"auc");
-#auc = as.numeric(auc.tmp@y.values);
+pred = prediction(PRFt, d$Choice)
+perf=performance(pred,"tpr","fpr")
+plot(perf, lwd=3, col="red",spread.estimate="stderror",plotCI.lwd=2)
+
+auc.tmp = performance(pred,"auc");
+auc = as.numeric(auc.tmp@y.values);
