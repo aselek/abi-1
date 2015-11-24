@@ -3,6 +3,7 @@
 #install.packages("digest")
 #install.packages("sna")
 #install.packages("rgl")
+#install.packages("gbm")
 library(rminer) 
 library(ROCR)
 library(digest)
@@ -228,12 +229,51 @@ mirrorTheData <- function(d){
 }
 
 # Use RMiner to do classification on a list of algorithms
-classifyAll <- function(predictorsClass, dC, tC){
+classifyBoth <- function(predictorsClass, dC, tC){
 	for(j in 1:length(predictorsClass)) {
 		print(predictorsClass[j])
-		RF=fit(Choice~.,dC,model=predictorsClass[j]) 
+		knnParams=mining(Choice~.,d,model=predictorsClass[j],Runs=5,method=c("kfold",3),search="heuristic5") #,f="s"
+		RF=fit(Choice~.,dC,model=predictorsClass[j],search=knnParams$mpar) 
 		PRFu=predict(RF,tC)
 	
+	k=0
+	xVals=c(0)
+	yVals=c(0)
+	acc=-1
+	#print(paste("(0,0)"))
+	while(k<=1){
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(tC[[1]]))
+			for(i in 1:length(PRFu[,1])) {
+   				PRF[i] <- ifelse((PRFu[i,1] - PRFu[i,2] + 1) / 2 < k,1,0)
+		}
+
+		pred = prediction(PRF, t$Choice)
+		perf=performance(pred,"tpr","fpr")
+		if(length(perf@x.values[[1]])==3){
+			xVals=c(xVals,perf@x.values[[1]][2])
+			yVals=c(yVals,perf@y.values[[1]][2])
+			#print(paste("(",perf@x.values[[1]][2],",",perf@y.values[[1]][2],")"))
+		}
+		if(k==0.5){
+			#print(paste("test acc: ",perf@y.values[[1]][2]))
+			#acc=perf@y.values[[1]][2]
+			acc.tmp = performance(pred,"auc");
+			acc = as.numeric(acc.tmp@y.values);
+		}
+		k=k+0.1
+	}
+	#print(paste("(1,1)"))
+	print(paste("Acc: ",acc))
+	xVals=c(xVals,1)
+	yVals=c(yVals,1)
+	perf@x.values[[1]]=xVals
+	perf@y.values[[1]]=yVals
+	plot(perf, lwd=3, col="red",spread.estimate="stderror",plotCI.lwd=2)
+	#print(xVals)
+	#print(yVals)
+
+
 		# Convert RF probabilities to 0s and 1s
 		PRF=c(1:length(t[[1]]))
 		for(i in 1:length(PRFu[,1])) {
@@ -249,6 +289,71 @@ classifyAll <- function(predictorsClass, dC, tC){
 		write.csv(P,paste(predictorsClass[j], "Cprobs", sep=""), row.names=FALSE)
 	}
 }
+
+# Use RMiner to do classification on a list of algorithms
+classifyAll <- function(predictorsClass, dC, tC){
+	for(j in 1:length(predictorsClass)) {
+		print(predictorsClass[j])
+		knnParams=mining(Choice~.,d,model=predictorsClass[j],Runs=5,method=c("kfold",3),search="heuristic5",f="s")
+		RF=fit(Choice~.,dC,model=predictorsClass[j],search=knnParams$mpar) 
+		PRFu=predict(RF,tC)
+	
+	k=0
+	xVals=c(0)
+	yVals=c(0)
+	acc=-1
+	print(paste("(0,0)"))
+	while(k<=1){
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(tC[[1]]))
+			for(i in 1:length(PRFu[,1])) {
+   				PRF[i] <- ifelse((PRFu[i,1] - PRFu[i,2] + 1) / 2 < k,1,0)
+		}
+
+		pred = prediction(PRF, t$Choice)
+		perf=performance(pred,"tpr","fpr")
+		if(length(perf@x.values[[1]])==3){
+			xVals=c(xVals,perf@x.values[[1]][2])
+			yVals=c(yVals,perf@y.values[[1]][2])
+			print(paste("(",perf@x.values[[1]][2],",",perf@y.values[[1]][2],")"))
+		}
+		if(k==0.5){
+			#print(paste("test acc: ",perf@y.values[[1]][2]))
+			#acc=perf@y.values[[1]][2]
+			acc.tmp = performance(pred,"auc");
+			acc = as.numeric(acc.tmp@y.values);
+		}
+		k=k+0.1
+	}
+	print(paste("(1,1)"))
+	
+	print(paste("Acc: ",acc))
+	xVals=c(xVals,1)
+	yVals=c(yVals,1)
+	perf@x.values[[1]]=xVals
+	perf@y.values[[1]]=yVals
+	plot(perf, lwd=3, col="red",spread.estimate="stderror",plotCI.lwd=2)
+	#print(xVals)
+	#print(yVals)
+
+
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(t[[1]]))
+		for(i in 1:length(PRFu[,1])) {
+    			PRF[i] <- ifelse(PRFu[i,1] < PRFu[i,2],1,0)
+		}
+	
+		# Save to a CSV
+		P=data.frame(ID=c(1:length(t[[1]])),Choice=PRF)
+		write.csv(P,paste(predictorsClass[j], "C", sep=""), row.names=FALSE)
+
+		# Save probabilites of prediction to CSV
+		P=data.frame(ID=c(1:length(t[[1]])),Choice0=PRFu[,1], Choice1=PRFu[,2])
+		write.csv(P,paste(predictorsClass[j], "Cprobs", sep=""), row.names=FALSE)
+	}
+}
+
+
 
 # Use RMiner to do classification on an algorithm
 classify <- function(predictorsClass, dC, tC){
@@ -301,16 +406,53 @@ classify <- function(predictorsClass, dC, tC){
 
 # Use RMiner to do regression on a list of algorithms
 regressionAll <- function(predictorsRegr, d, t){
-	for(j in 1:length(predictorsBoth)) {
+	
+	for(j in 1:length(predictorsRegr)) {
 		print(predictorsRegr[j])
-		RF=fit(Choice~.,d,model=predictorsRegr[j]) 
+		knnParams=mining(Choice~.,d,model=predictorsRegr[j],Runs=5,method=c("kfold",3),search="heuristic5",f="s")
+		RF=fit(Choice~.,d,model=predictorsRegr[j],search=knnParams$mpar) 
 		PRFu=predict(RF,t)
+
+	k=0
+	xVals=c(0)
+	yVals=c(0)
+	acc=-1
+	print(paste("(0,0)"))
+	while(k<=1){
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(t[[1]]))
+			for(i in 1:length(PRFu)) {
+   				PRF[i] <- ifelse(PRFu[i] > k,1,0)
+		}
+
+		pred = prediction(PRF, t$Choice)
+		perf=performance(pred,"tpr","fpr")
+		if(length(perf@x.values[[1]])==3){
+			xVals=c(xVals,perf@x.values[[1]][2])
+			yVals=c(yVals,perf@y.values[[1]][2])
+			print(paste("(",perf@x.values[[1]][2],",",perf@y.values[[1]][2],")"))
+		}
+		if(k==0.5){
+			#print(paste("test acc: ",perf@y.values[[1]][2]))
+			#acc=perf@y.values[[1]][2]
+			acc.tmp = performance(pred,"auc");
+			acc = as.numeric(acc.tmp@y.values);
+		}
+		k=k+0.1
+	}
+	print(paste("(1,1)"))
+
 
 		# Convert RF probabilities to 0s and 1s
 		PRF=c(1:length(t[[1]]))
 		for(i in 1:length(PRFu)) {
     			PRF[i] <- ifelse(PRFu[i] > 0.5,1,0)
 		}
+
+		pred = prediction(PRF, t$Choice)
+		acc.tmp = performance(pred,"auc");
+		print(paste(as.numeric(acc.tmp@y.values)));
+
 
 		# Save to a CSV
 		P=data.frame(ID=c(1:length(t[[1]])),Choice=PRF)
@@ -405,13 +547,74 @@ remID <- function(d){
 	return(d)
 }
 
-############### CODE ###############
+gbmFunction <- function(d, t){
 
+all <- rbind(d, t)
+library(gbm)
+
+set.seed(1234)
+#  Now rework with binomial loss
+fit.gbm3 <- gbm(Choice ~ ., data=d, dist="bernoulli", n.tree = 400,
+    shrinkage = 1, train.fraction = 1)
+#gbm.perf(fit.gbm3, method="test")
+
+predictions=predict(fit.gbm3, t, n.trees = 255)
+
+	k=-8
+	xVals=c(0)
+	yVals=c(0)
+	acc=-1
+	print(paste("(0,0)"))
+	while(k<=8){
+		# Convert RF probabilities to 0s and 1s
+		PRF=c(1:length(t[[1]]))
+			for(i in 1:length(predictions)) {
+   				PRF[i] <- ifelse(predictions[i] > k,1,0)
+		}
+
+		pred = prediction(PRF, t$Choice)
+		perf=performance(pred,"tpr","fpr")
+		if(length(perf@x.values[[1]])==3){
+			xVals=c(xVals,perf@x.values[[1]][2])
+			yVals=c(yVals,perf@y.values[[1]][2])
+			print(paste("(",perf@x.values[[1]][2],",",perf@y.values[[1]][2],")"))
+		}
+		if(k==0){
+			#print(paste("test acc: ",perf@y.values[[1]][2]))
+			#acc=perf@y.values[[1]][2]
+			acc.tmp = performance(pred,"auc");
+			acc = as.numeric(acc.tmp@y.values);
+		}
+		k=k+1
+	}
+	print(paste("(1,1)"))
+
+
+fit.gbm3 <- gbm(Choice ~ ., data=d, dist="bernoulli", n.tree = 400,
+    shrinkage = 1, train.fraction = 1)
+
+predictions=predict(fit.gbm3, t, n.trees = 255)
+PRF=c(1:length(t[[1]]))
+for(i in 1:length(PRF)) {
+    	PRF[i] <- ifelse(predictions[i] > 0,1,0)
+}
+pred = prediction(PRF, t$Choice)
+acc.tmp = performance(pred,"auc");
+acc = as.numeric(acc.tmp@y.values);
+print(acc)
+
+confusion(predict(fit.gbm3, t, n.trees = 255) > 0, test.data2$y > 0)
+
+}
+
+############### CODE ###############
+set.seed(1234)
 # Read values
 setwd('C:\\Users\\BlueMoon\\Documents\\GitHub\\abi')
 d=read.csv('train.csv', TRUE, ',')
 t=read.csv('test.csv', TRUE, ',')
 
+realVals=t$Choice
 # Create IDs and associate A>B>C as A>C on the dataset. Then remove the IDs
 # This takes hours to run; consider loading "newData.csv"
 #d=addID(d)
@@ -431,45 +634,46 @@ t = createFollowersFollowingRatios(t)
 d = mirrorTheData(d)
 
 # create ratios between A and B columns
-d = joinAandBcols(d)
-t = joinAandBcols(t)
+d = joinAandBcolsWithDeltas(d)
+t = joinAandBcolsWithDeltas(t)
 
 # Normalize with X-min/(max-min), to scale between 0 and 1
-for(i in 2:length(d)){
-	max=max(d[[i]])
-	min=min(d[[i]])
-	d[[i]]=(d[[i]]-min)/(max-min)
-}
-for(i in 1:length(t)){
-	max=max(t[[i]])
-	min=min(t[[i]])
-	t[[i]]=(t[[i]]-min)/(max-min)
-}
+#for(i in 2:length(d)){
+#	max=max(d[[i]])
+#	min=min(d[[i]])
+#	d[[i]]=(d[[i]]-min)/(max-min)
+#}
+#for(i in 1:length(t)){
+#	max=max(t[[i]])
+#	min=min(t[[i]])
+#	t[[i]]=(t[[i]]-min)/(max-min)
+#}
 
 # Try GBM (GBDT), Elo System, etc
 # Ignore sent retweets (feature selection)
 
 # List of RMiner's algorithms
-predictorsBoth = c("naive", "ctree", "dt", "kknn", "mlp", "mlpe", "ksvm", "randomforest")
+predictorsBoth = c("ctree", "dt", "kknn", "mlp", "mlpe", "ksvm", "randomforest")
 predictorsClass = c("bagging", "boosting", "lda", "lr", "naivebayes", "qda")
-#predictorsRegr = c("mr", "mars", "cubist", "pcr", "plsr", "cppls", "rvm")
+predictorsRegr = c("mr", "mars", "cubist", "pcr", "plsr", "cppls")
 
 # Prepare the data to be learned and fitted
 tC = t
 dC = d
 dC$Choice <- as.factor(dC$Choice)
 tC$Choice <- as.factor(c(rep(1, length(t[[1]])/2),rep(0,length(t[[1]])/2)))
+tC$Choice <- as.factor(tC$Choice)
 t$Choice <- c(rep(1, length(t[[1]])/2),rep(0,length(t[[1]])/2))
-perf=classify("boosting", dC, dC)
+#perf=classify("boosting", dC, dC)
 
 # instead of 0 and 1's, when opinions differ, we could set values in between
 # but since regressions isnt used, no need to do it
 
 # Try all algorithms
-#regressionAll(predictorsBoth, d, t)
-#regressionAll(predictorsRegr, d, t)
-#classifyAll(predictorsBoth, dC, tC)
-#classifyAll(predictorsClass, dC, tC)
+regressionAll(predictorsBoth, d, t)
+regressionAll(predictorsRegr, d, t)
+classifyBoth(predictorsBoth, dC, tC)
+classifyAll(predictorsClass, dC, tC)
 
 for(j in 1:length(predictorsBoth)) {
 	print(predictorsBoth[j])
@@ -480,26 +684,93 @@ for(j in 1:length(predictorsClass)) {
 	classify(predictorsClass[j], dC, tC)
 }
 
+knnParams=mining(Choice~.,dC,model="boosting",Runs=5,method=c("kfold",3),
+	search="heuristic5",f="s")
+RF=fit(Choice~.,dC,model="boosting",search=knnParams$mpar) 
+PRFu1=predict(RF,tC)
+PRF1=c(rep(0,length(t[[1]])))
+for(i in 1:length(t[[1]])) {
+    PRF1[i] <- ifelse(PRFu1[i,1] < PRFu1[i,2],
+		PRFu1[i,2]-PRFu1[i,1],
+		-(PRFu1[i,1]-PRFu1[i,2]))
+}
 
-
-# Boosting		78%
-RF=fit(Choice~.,dC,model="boosting") 
-PRFu=predict(RF,tC)
-
-# Convert RF probabilities to 0s and 1s
-#PRF=c(1:length(t[[1]]))
-#for(i in 1:length(PRFu[,1])) {
-#    PRF[i] <- ifelse(PRFu[i,1] < PRFu[i,2],1,0)
+RF <- gbm(Choice ~ ., data=d, dist="bernoulli", n.tree = 400, 
+	shrinkage = 1, train.fraction = 1)
+PRFu2=predict(RF, t, n.trees = 255)
+PRF2=PRFu2/7
+#PRF2=c(rep(0,length(t[[1]])))
+#for(i in 1:length(t[[1]])) {
+    #PRF2[i]=ifelse(PRFu2[i]<-8,-8,PRFu2[i])
+    #PRF2[i]=ifelse(PRFu2[i]>8,8,PRFu2[i])
+#    PRF2[i]=PRFu2[i]/7
 #}
 
-# Save to a CSV
-#P=data.frame(ID=c(1:length(t[[1]])),Choice=PRF)
-#write.csv(P,"results.csv", row.names=FALSE)
+knnParams=mining(Choice~.,d,model="mars",Runs=5,method=c("kfold",3),
+	search="heuristic5",f="s")
+RF=fit(Choice~.,d,model="mars",search=knnParams$mpar) 
+PRFu3=predict(RF,t)
+PRF3=PRFu3*2-1
 
-# ROC curve
-pred = prediction(PRFt, d$Choice)
-perf=performance(pred,"tpr","fpr")
-plot(perf, lwd=3, col="red",spread.estimate="stderror",plotCI.lwd=2)
+knnParams=mining(Choice~.,dC,model="mlpe",Runs=5,method=c("kfold",3),
+	search="heuristic5",f="s")
+RF=fit(Choice~.,dC,model="mlpe",search=knnParams$mpar) 
+PRFu4=predict(RF,tC)
+PRF4=c(rep(0,length(t[[1]])))
+for(i in 1:length(t[[1]])) {
+    PRF4[i] <- ifelse(PRFu4[i,1] < PRFu4[i,2],
+		PRFu4[i,2]-PRFu4[i,1],
+		-(PRFu4[i,1]-PRFu4[i,2]))
+}
 
-auc.tmp = performance(pred,"auc");
-auc = as.numeric(auc.tmp@y.values);
+
+knnParams=mining(Choice~.,d,model="cubist",Runs=5,method=c("kfold",3),
+	search="heuristic5",f="s")
+RF=fit(Choice~.,d,model="cubist",search=knnParams$mpar) 
+PRFu5=predict(RF,t)
+PRF5=PRFu5*2-1
+
+knnParams=mining(Choice~.,dC,model="ctree",Runs=5,method=c("kfold",3),
+	search="heuristic5")
+RF=fit(Choice~.,dC,model="ctree",search=knnParams$mpar) 
+PRFu6=predict(RF,tC)
+PRF6=c(rep(0,length(t[[1]])))
+for(i in 1:length(t[[1]])) {
+    PRF6[i] <- ifelse(PRFu6[i,1] < PRFu6[i,2],
+		PRFu6[i,2]-PRFu6[i,1],
+		-(PRFu6[i,1]-PRFu6[i,2]))
+}
+
+
+results=c(rep(0,length(t[[1]])))
+for(i in 1:length(t[[1]])){
+	PRF1[i] <- ifelse(PRF1[i] > 0,PRF1[i]^2,-(PRF1[i]^2))
+	PRF2[i] <- ifelse(PRF2[i] > 0,PRF2[i]^2,-(PRF2[i]^2))
+	PRF3[i] <- ifelse(PRF3[i] > 0,PRF3[i]^2,-(PRF3[i]^2))
+	PRF4[i] <- ifelse(PRF4[i] > 0,PRF4[i]^2,-(PRF4[i]^2))
+	PRF5[i] <- ifelse(PRF5[i] > 0,PRF5[i]^2,-(PRF5[i]^2))
+	PRF6[i] <- ifelse(PRF6[i] > 0,PRF6[i]^2,-(PRF6[i]^2))
+}
+for(i in 1:length(t[[1]])){
+	results[i]=PRF1[i]+PRF2[i]
+#+PRF3[i]+PRF4[i]+PRF5[i]+PRF6[i]
+}
+
+for(i in 1:length(t[[1]])){
+	results[i] <- ifelse(results[i] > 0,1,0)
+}
+
+P=data.frame(ID=c(1:length(t[[1]])),Choice=results)
+write.csv(P,"results.csv", row.names=FALSE)
+
+pred = prediction(results, t$Choice)
+acc.tmp = performance(pred,"auc");
+acc = as.numeric(acc.tmp@y.values);
+print(acc)
+
+
+
+
+
+
+
